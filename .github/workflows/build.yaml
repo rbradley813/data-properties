@@ -42,5 +42,5 @@ jobs:
                 echo ""
                 echo "Deploying ${{env.MODULE}}"
                 echo ""
-                mvn clean deploy -f ${{env.MODULE}}
+                # mvn clean deploy -f ${{env.MODULE}}
 
