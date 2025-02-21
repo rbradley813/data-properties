@@ -1,0 +1,31 @@
+name: Publish Properties
+
+run-name: Publish Properties -- ${{github.head_ref || github.ref_name}}
+
+on:
+    workflow_dispatch:
+        inputs:
+            modules:
+                type: choice
+                description: Module
+                required: true
+                options:
+                    - --SELECT--
+                    - tinkar-starter-data-properties
+
+jobs:
+    publish-properties:
+        name: Publish Properties
+        runs-on: ubuntu-24.04
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v4
+
+            - name: Maven Clean Install
+              run: | 
+                mvn clean install
+                echo ""
+                echo "Cleaning ${{inputs.modules}}"
+                echo ""
+                mvn clean deploy -f ${{inputs.modules}}
+
