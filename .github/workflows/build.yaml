@@ -11,7 +11,11 @@ on:
                 required: true
                 options:
                     - --SELECT--
+                    - data-properties
                     - tinkar-starter-data-properties
+
+env:
+    MODULE: ${{inputs.modules == 'data-properties' && '.' || inputs.modules}}
 
 jobs:
     publish-properties:
@@ -21,11 +25,22 @@ jobs:
             - name: Checkout Code
               uses: actions/checkout@v4
 
+            # Fails If Module Version Contains "SNAPSHOT"
+            - name: Version Verification
+              run: |
+                 CURRENT_VERSION=$(mvn help:evaluate -D'expression=project.version' -q -D'forceStdout')
+                 if [[ "$CURRENT_VERSION" == *"SNAPSHOT"* ]]; then
+                    echo "::error::Current Version $CURRENT_VERSION Is Invalid"
+                  exit 1
+                 fi
+              working-directory: ${{env.MODULE}}
+
+
             - name: Maven Clean Install
               run: | 
                 mvn clean install
                 echo ""
-                echo "Cleaning ${{inputs.modules}}"
+                echo "Deploying ${{env.MODULE}}"
                 echo ""
-                mvn clean deploy -f ${{inputs.modules}}
+                mvn clean deploy -f ${{env.MODULE}}
 
