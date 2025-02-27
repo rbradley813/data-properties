@@ -13,6 +13,7 @@ on:
                     - --SELECT--
                     - data-properties
                     - tinkar-starter-data-properties
+                    - tinkar-example-data-properties
 
 env:
     MODULE: ${{inputs.modules == 'data-properties' && '.' || inputs.modules}}
