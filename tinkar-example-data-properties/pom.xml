@@ -18,4 +18,33 @@
         <tinkar-starter-data.version>1.0.3</tinkar-starter-data.version>
     </properties>
 
+    <name>Tinkar Example Data Properties</name>
+    <description>Tinkar Example Data Properties Project</description>
+    <url>https://www.ikm.dev</url>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+            <comments>A business-friendly OSS license</comments>
+        </license>
+    </licenses>
+
+    <developers>
+        <!-- OSSRH Related Developer (Start) -->
+        <developer>
+            <id>ikmdev</id>
+            <name>IKM Development Team</name>
+            <email>support@ikm.dev</email>
+        </developer>
+        <!-- OSSRH Related Developer (End) -->
+    </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com/ikmdev/data-properties.git</connection>
+        <developerConnection>scm:git:ssh://github.com:ikmdev/data-properties.git</developerConnection>
+        <url>http://www.github.com/ikmdev/data-properties</url>
+    </scm>
+
 </project>
