@@ -12,6 +12,7 @@
     <groupId>dev.ikm.maven.tinkar</groupId>
     <artifactId>data-properties-parent</artifactId>
     <version>1.0.0-prepare-deployment-to-mc-SNAPSHOT</version>
+    <packaging>pom</packaging>
 
     <name>Data Properties Parent</name>
     <description>Data Properties Parent Project</description>
