@@ -1,0 +1,47 @@
+name: Publish Properties
+
+run-name: Publish Properties -- ${{github.head_ref || github.ref_name}}
+
+on:
+    workflow_dispatch:
+        inputs:
+            modules:
+                type: choice
+                description: Module
+                required: true
+                options:
+                    - --SELECT--
+                    - data-properties
+                    - tinkar-starter-data-properties
+                    - tinkar-example-data-properties
+
+env:
+    MODULE: ${{inputs.modules == 'data-properties' && '.' || inputs.modules}}
+
+jobs:
+    publish-properties:
+        name: Publish Properties
+        runs-on: ubuntu-24.04
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v4
+
+            # Fails If Module Version Contains "SNAPSHOT"
+            - name: Version Verification
+              run: |
+                 CURRENT_VERSION=$(mvn help:evaluate -D'expression=project.version' -q -D'forceStdout')
+                 if [[ "$CURRENT_VERSION" == *"SNAPSHOT"* ]]; then
+                    echo "::error::Current Version $CURRENT_VERSION Is Invalid"
+                  exit 1
+                 fi
+              working-directory: ${{env.MODULE}}
+
+
+            - name: Maven Clean Install
+              run: | 
+                mvn clean install
+                echo ""
+                echo "Deploying ${{env.MODULE}}"
+                echo ""
+                # mvn clean deploy -f ${{env.MODULE}}
+
