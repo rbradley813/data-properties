@@ -15,7 +15,7 @@
     <packaging>pom</packaging>
 
     <properties>
-        <tinkar-starter-data.version>1.0.0-SNAPSHOT+1.7.0</tinkar-starter-data.version>
+        <tinkar-starter-data.version>1.0.2</tinkar-starter-data.version>
     </properties>
 
 </project>
