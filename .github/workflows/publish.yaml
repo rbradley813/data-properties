@@ -53,25 +53,6 @@ jobs:
                  fi
               working-directory: ${{env.MODULE}}
 
-
-            # - name: Check For Tag
-            #   id: is_tag
-            #   shell: bash
-            #   run: |
-            #     if git show-ref --tags --verify --quiet "refs/tags/${HEAD_BRANCH}"; then
-            #        echo "Tag ${HEAD_BRANCH} exists"
-            #        echo "NEXUS_REPO_ID=maven-releases">> $GITHUB_OUTPUT
-            #        echo "RELEASE_ENFORCEMENT=-Prelease-enforcement" >> $GITHUB_OUTPUT
-            #        echo "IS_TAG=true" >> $GITHUB_OUTPUT
-            #      else
-            #        echo "Tag ${HEAD_BRANCH} does not exist"
-            #        echo "NEXUS_REPO_ID=maven-snapshots">> $GITHUB_OUTPUT
-            #        echo "RELEASE_ENFORCEMENT=" >> $GITHUB_OUTPUT
-            #        echo "IS_TAG=false" >> $GITHUB_OUTPUT
-            #      fi
-            #   env:
-            #     HEAD_BRANCH: ${{ inputs.branch_name }}
-
             
             - name: Maven Settings File
               uses: whelk-io/maven-settings-xml-action@v22
