@@ -50,8 +50,29 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <templating-maven-plugin.version>3.0.0</templating-maven-plugin.version>
+        <builder-helper-maven-plugin.version>3.6.0</builder-helper-maven-plugin.version>
     </properties>
 
+   <build> 
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>templating-maven-plugin</artifactId>
+                    <version>${templating-maven-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>build-helper-maven-plugin</artifactId>
+                    <version>${builder-helper-maven-plugin.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+   </build>
+
+   
+    
     <profiles>
         <profile>
             <id>properties</id>
@@ -65,7 +86,6 @@
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>templating-maven-plugin</artifactId>
-                        <version>3.0.0</version>
                         <executions>
                             <execution>
                                 <id>inject-maven-properties</id>
@@ -83,7 +103,6 @@
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>build-helper-maven-plugin</artifactId>
-                        <version>3.6.0</version>
                         <executions>
                             <execution>
                                 <id>attach-artifacts</id>
