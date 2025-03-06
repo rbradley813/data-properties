@@ -37,11 +37,10 @@ jobs:
                 gpg-private-key: ${{secrets.GPG_KEY}}
                 gpg-passphrase: MAVEN_GPG_PASSPHRASE
 
-            # Fails If Module Version Contains "SNAPSHOT"
             - name: Version Verification
               id: version_verification
               run: |
-                 CURRENT_VERSION=$(mvn help:evaluate -D'expression=project.version' -q -D'forceStdout')
+                 CURRENT_VERSION=$(mvn help:evaluate -D'expression=project.version' -q -D'forceStdout') >> $GITHUB_OUTPUT
                  if [[ "$CURRENT_VERSION" == *"SNAPSHOT"* ]]; then
                     # echo "::error::Current Version $CURRENT_VERSION Is Invalid"
                     echo "NEXUS_REPO_ID=maven-snapshots">> $GITHUB_OUTPUT
@@ -52,6 +51,21 @@ jobs:
                     echo "RELEASE_ENFORCEMENT=-Prelease-enforcement" >> $GITHUB_OUTPUT
                  fi
               working-directory: ${{env.MODULE}}
+
+            - name: Check For Tag
+              if: steps.version_verification.outputs.NEXUS_REPO_ID == 'maven-releases'
+              id: is_tag
+              shell: bash
+              run: |
+                if git show-ref --tags --verify --quiet "refs/tags/${TAG_NAME}"; then
+                   echo "Tag ${HEAD_BRANCH} exists"
+                 else
+                   echo "Tag ${HEAD_BRANCH} does not exist"
+                   echo "::error::Please Make Tag In The Following Format -- *<module-name>-<version-number>*"
+                   exit
+                 fi
+              env:
+                TAG_NAME: ${{ steps.version_verification.outputs.CURRENT_VERSION}}
 
             
             - name: Maven Settings File
