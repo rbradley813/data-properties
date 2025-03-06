@@ -80,7 +80,7 @@ jobs:
          
             - name: Maven Build
               run: |
-                    ./mvnw clean install\
+                    mvn clean install\
                       --batch-mode \
                       -U \
                       -e \
@@ -95,7 +95,7 @@ jobs:
 
             - name: Deploy To Nexus
               run: |
-                    ./mvnw deploy \
+                    mvn deploy \
                         --batch-mode \
                         -U \
                         -e \
@@ -111,7 +111,7 @@ jobs:
               shell: bash
               if: steps.version_verification.outputs.NEXUS_REPO_ID == 'maven-releases' 
               run: |
-                     ./mvnw deploy \
+                     mvn deploy \
                         --batch-mode \
                         -e \
                         -U \
