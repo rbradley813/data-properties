@@ -41,7 +41,7 @@ jobs:
     if: github.repository_owner == 'ikmdev'
     defaults:
       run:
-       working-directory: env.MODDULE
+       working-directory: ${{inputs.modules}}
     steps:
       - name: Verify Module Selection
         if: inputs.modules == '-- SELECT --'
