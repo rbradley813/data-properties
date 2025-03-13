@@ -60,12 +60,6 @@ jobs:
         with:
           token: ${{secrets.IKMDEVOPS_PAT_TOKEN}}
 
-      - name: Test
-        run: |
-          pwd
-          ls
-          exit 1
-
       - name: Shared Release Action
         uses: ikmdev/maven-semver-release-action@v2
         with:
