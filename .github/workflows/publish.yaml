@@ -40,11 +40,9 @@ jobs:
             - name: Version Verification
               id: version_verification
               run: |
-                 CURRENT_VERSION=$(mvn help:evaluate -D'expression=project.version' -q -D'forceStdout') >> $GITHUB_OUTPUT
+                 echo CURRENT_VERSION=$(mvn help:evaluate -D'expression=project.version' -q -D'forceStdout') >> $GITHUB_OUTPUT
                  if [[ "$CURRENT_VERSION" == *"SNAPSHOT"* ]]; then
-                    # echo "::error::Current Version $CURRENT_VERSION Is Invalid"
                     echo "NEXUS_REPO_ID=maven-snapshots">> $GITHUB_OUTPUT
-                    echo "RELEASE_ENFORCEMENT=-Prelease-enforcement" >> $GITHUB_OUTPUT
                     echo "RELEASE_ENFORCEMENT=" >> $GITHUB_OUTPUT
                   else
                     echo "NEXUS_REPO_ID=maven-releases">> $GITHUB_OUTPUT
@@ -58,9 +56,9 @@ jobs:
               shell: bash
               run: |
                 if git show-ref --tags --verify --quiet "refs/tags/${TAG_NAME}"; then
-                   echo "Tag ${HEAD_BRANCH} exists"
+                   echo "Tag ${TAG_NAME} exists"
                  else
-                   echo "Tag ${HEAD_BRANCH} does not exist"
+                   echo "Tag ${TAG_NAME} does not exist"
                    echo "::error::Please Make Tag In The Following Format -- *<module-name>-<version-number>*"
                    exit
                  fi
