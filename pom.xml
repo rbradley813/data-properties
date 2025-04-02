@@ -53,6 +53,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <templating-maven-plugin.version>3.0.0</templating-maven-plugin.version>
         <builder-helper-maven-plugin.version>3.6.0</builder-helper-maven-plugin.version>
+        <!-- GitFlow Maven Plugin -->
+        <gitflow-maven-plugin.version>1.21.1-r4</gitflow-maven-plugin.version>
     </properties>
 
    <build> 
@@ -67,6 +69,17 @@
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>build-helper-maven-plugin</artifactId>
                     <version>${builder-helper-maven-plugin.version}</version>
+                </plugin>
+                <!-- GitFlow Maven Plugin -->
+                <plugin>
+                    <groupId>dev.ikm</groupId>
+                    <artifactId>gitflow-maven-plugin</artifactId>
+                    <version>${gitflow-maven-plugin.version}</version>
+                    <configuration>
+                        <gitFlowConfig>
+                            <versionTagPrefix>${project.artifactId}</versionTagPrefix>
+                        </gitFlowConfig>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
