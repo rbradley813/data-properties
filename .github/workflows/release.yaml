@@ -63,25 +63,29 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
-          java-version: 21
+            distribution: 'zulu'
+            java-version: 21
+            server-id: ossrh
+            server-username: MAVEN_USERNAME
+            server-password: MAVEN_CENTRAL_TOKEN
+            gpg-private-key: ${{secrets.GPG_KEY}}
+            gpg-passphrase: MAVEN_GPG_PASSPHRASE
 
       - name: Configure Version Type
         id: configure_version_type
-        shell: bash
         run: |
-          if [ $RELEASE_TYPE == 'major' ]; then 
-           echo "version_type=0" >> $GITHUB_OUTPUT
-          elif [ $RELEASE_TYPE == 'minor' ]; then
-           echo "version_type=1" >> $GITHUB_OUTPUT
-          elif [ $RELEASE_TYPE == 'patch' ]; then
-           echo "version_type=2" >> $GITHUB_OUTPUT
-          elif [ $RELEASE_TYPE == 'pre-release' ]; then
-           echo "version_type=3" >> $GITHUB_OUTPUT
-          else
-           echo "ERROR: Invalid version_type '${{ inputs.version_type }}'."
-           exit 1
-          fi
+         if [ $RELEASE_TYPE == 'major' ]; then 
+          echo "version_type=0" >> $GITHUB_OUTPUT
+         elif [ $RELEASE_TYPE == 'minor' ]; then
+          echo "version_type=1" >> $GITHUB_OUTPUT
+         elif [ $RELEASE_TYPE == 'patch' ]; then
+          echo "version_type=2" >> $GITHUB_OUTPUT
+         elif [ $RELEASE_TYPE == 'pre-release' ]; then
+          echo "version_type=3" >> $GITHUB_OUTPUT
+         else
+          echo "ERROR: Invalid version_type '${{ inputs.version_type }}'."
+          exit 1
+         fi
         env:
           RELEASE_TYPE: ${{inputs.version_type}}
 
@@ -93,18 +97,81 @@ jobs:
       - name: GitFlow Release
         id: gitflow_release
         run: |
-          mvn gitflow:release \
+             mvn gitflow:release \
+                --batch-mode \
+                -X \
+                -Dverbose=true \
+                -DallowSnapshots=true \
+                -DreleaseVersion=${{ inputs.release_version }} \
+                -DversionDigitToIncrement=${{ steps.configure_version_type.outputs.version_type }} \
+                -DdevelopmentVersion=${{ inputs.development_version }} \
+                -DpostReleaseGoals="clean install \
+                      --batch-mode \
+                      -e \
+                      -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
+                      -PcodeQuality,release-enforcement \
+                      -PgenerateData \
+                      -Dmaven.build.cache.enabled=false"
+
+      - name: Get Latest Tag
+        id: get_latest_tag
+        run: |
+          echo "LATEST_TAG=$(git describe --tags --abbrev=0)" >> $GITHUB_OUTPUT
+
+      - name: Checkout Latest Tag
+        uses: actions/checkout@v4
+        with:
+          token: ${{secrets.IKMDEVOPS_PAT_TOKEN}}
+          ref: ${{steps.get_latest_tag.outputs.LATEST_TAG}}
+
+      - name: Maven Settings File
+        uses: whelk-io/maven-settings-xml-action@v22
+        with:
+          servers: '[{"id": "maven-releases", "username": "admin", "password": "${{secrets.EC2_NEXUS_PASSWORD}}"}]'
+          profiles: '[{"id": "nexus-profile", "properties": {"altDeploymentRepository": "maven-releases::https://nexus.tinkarbuild.com/repository/maven-releases"}}]'
+          active_profiles: '["nexus-profile"]'
+          output_file: .m2/settings.xml
+
+      - name: Maven Build
+        run: |
+          mvn clean install\
+            --batch-mode \
+            -U \
+            -e \
+            -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
+            -Dmaven.build.cache.enabled=false \
+            -PcodeQuality \
+            -PgenerateData \
+            -Prelease-enforcement 
+
+      - name: Deploy To Nexus
+        run: |
+          mvn deploy \
+              --batch-mode \
+              -U \
+              -e \
+              -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
+              -DskipTests \
+              -DskipITs \
+              -s '/home/runner/work/${{github.event.repository.name}}/${{github.event.repository.name}}/.m2/settings.xml'\
+              -DrepositoryId='maven-releases'
+
+      - name: Publish To OSSRH (Maven Central Staging)
+        run: |
+          mvn deploy \
              --batch-mode \
-             -X \
-             -Dverbose=true \
-             -DallowSnapshots=true \
-             -DreleaseVersion=${{ inputs.release_version }} \
-             -DversionDigitToIncrement=${{ steps.configure_version_type.outputs.version_type }} \
-             -DdevelopmentVersion=${{ inputs.development_version }} \
-             -DpostReleaseGoals="clean install \
-                   --batch-mode \
-                   -e \
-                   -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
-                   -PcodeQuality,release-enforcement \
-                   -PgenerateData \
-                   -Dmaven.build.cache.enabled=false"
+             -e \
+             -U \
+             -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
+             -DskipTests \
+             -DskipITs \
+             -Dmaven.main.skip \
+             -Dmaven.test.skip \
+             -DrepositoryId=ossrh \
+             -DrepositoryIdOSSRH='true' \
+             -PstageOSSRH \
+             -Dmaven.build.cache.enabled=false
+        env:
+          MAVEN_USERNAME: ${{secrets.OSSRH_TOKEN_USER}}
+          MAVEN_CENTRAL_TOKEN: ${{secrets.OSSRH_TOKEN_PASS}}
+          MAVEN_GPG_PASSPHRASE: ${{secrets.GPG_PASSPHRASE}}
