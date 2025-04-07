@@ -39,16 +39,13 @@ jobs:
     name: Release
     runs-on: ubuntu-24.04
     if: github.repository_owner == 'ikmdev'
-    defaults:
-      run:
-        working-directory: ${{env.MODULE}}
     steps:
       - name: Verify Module Selection
         if: inputs.modules == '-- SELECT --'
         run: |
           echo "ERROR: Please pick a correct module from the selection"
           exit 1
-
+          
       - name: Verify Branch
         if: env.BRANCH_NAME != env.TRUNK_BRANCH_NAME
         run: |
@@ -112,6 +109,7 @@ jobs:
                       -PcodeQuality,release-enforcement \
                       -PgenerateData \
                       -Dmaven.build.cache.enabled=false"
+        working-directory: ${{env.MODULE}}
 
       - name: Get Latest Tag
         id: get_latest_tag
@@ -142,7 +140,8 @@ jobs:
             -Dmaven.build.cache.enabled=false \
             -PcodeQuality \
             -PgenerateData \
-            -Prelease-enforcement 
+            -Prelease-enforcement
+        working-directory: ${{env.MODULE}}
 
       - name: Deploy To Nexus
         run: |
@@ -155,23 +154,46 @@ jobs:
               -DskipITs \
               -s '/home/runner/work/${{github.event.repository.name}}/${{github.event.repository.name}}/.m2/settings.xml'\
               -DrepositoryId='maven-releases'
+        working-directory: ${{env.MODULE}}
 
       - name: Publish To OSSRH (Maven Central Staging)
         run: |
-          mvn deploy \
-             --batch-mode \
-             -e \
-             -U \
-             -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
-             -DskipTests \
-             -DskipITs \
-             -Dmaven.main.skip \
-             -Dmaven.test.skip \
-             -DrepositoryId=ossrh \
-             -DrepositoryIdOSSRH='true' \
-             -PstageOSSRH \
-             -Dmaven.build.cache.enabled=false
+         mvn deploy \
+            --batch-mode \
+            -e \
+            -U \
+            -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
+            -DskipTests \
+            -DskipITs \
+            -Dmaven.main.skip \
+            -Dmaven.test.skip \
+            -DrepositoryId=ossrh \
+            -DrepositoryIdOSSRH='true' \
+            -PstageOSSRH \
+            -Dmaven.build.cache.enabled=false
         env:
-          MAVEN_USERNAME: ${{secrets.OSSRH_TOKEN_USER}}
-          MAVEN_CENTRAL_TOKEN: ${{secrets.OSSRH_TOKEN_PASS}}
-          MAVEN_GPG_PASSPHRASE: ${{secrets.GPG_PASSPHRASE}}
+           MAVEN_USERNAME: ${{secrets.OSSRH_TOKEN_USER}}
+           MAVEN_CENTRAL_TOKEN: ${{secrets.OSSRH_TOKEN_PASS}}
+           MAVEN_GPG_PASSPHRASE: ${{secrets.GPG_PASSPHRASE}}
+        working-directory: ${{env.MODULE}}
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{secrets.IKMDEVOPS_PAT_TOKEN}}
+          repository: ikmdev/tinkar-example-data
+
+      - name: Update Properties Version Dropdown
+        run: |
+            git config user.name "ikmdevops"
+            git config user.email 'devops@ikm.dev'
+            git pull -p
+            echo "Adding $LATEST_TAG tag to the property version choice dropdown for users attempting to generate data"
+            yq -i ".on.workflow_dispatch.inputs.properties_version.options = [\"$LATEST_TAG\"] + .on.workflow_dispatch.inputs.properties_version.options" .github/workflows/generate_data.yaml
+            git diff -U1 | grep -E "\-\-\-|\- $LATEST_TAG" -B2 -A1 | grep -v "^--$" > add_property_version_choice.patch
+            git restore .
+            git apply add_property_version_choice.patch
+            git commit -am"Updated Generate Data Pipeline With $LATEST_TAG"
+            git push
+        env:
+          LATEST_TAG:  ${{steps.get_latest_tag.outputs.LATEST_TAG}}
