@@ -1,0 +1,176 @@
+name: Post Build Action
+
+run-name: 'Post Build Action -- ${{github.event.workflow_run.head_branch}}'
+
+# Trigger workflow after Build Workflow
+on:
+  workflow_run:
+   workflows:
+     - Build Workflow
+   types:
+     - completed
+
+permissions:
+ contents: write 
+
+env:
+  BRANCH_NAME: ${{github.event.workflow_run.head_branch}}
+
+jobs:
+  post-build:
+    name: Post Build Actions
+    runs-on: ubuntu-24.04
+    if: github.event.workflow_run.conclusion == 'success' && github.repository_owner == 'ikmdev'
+    strategy:
+      matrix:
+        module: [data-properties, tinkar-example-data-properties, tinkar-starter-data-properties]
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{github.event.workflow_run.head_repository.full_name}}
+          ref: ${{github.event.workflow_run.head_branch}}
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+            distribution: 'zulu'
+            java-version: 23
+            server-id: ossrh
+            server-username: MAVEN_USERNAME
+            server-password: MAVEN_CENTRAL_TOKEN
+            gpg-private-key: ${{secrets.GPG_KEY}}
+            gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
+      - name: Check For Tag
+        id: is_tag
+        run: |
+            if git show-ref --tags --verify --quiet "refs/tags/${HEAD_BRANCH}"; then
+                echo "Tag ${HEAD_BRANCH} exists"
+                echo "NEXUS_REPO_ID=maven-releases">> $GITHUB_OUTPUT
+                echo "RELEASE_ENFORCEMENT=-Prelease-enforcement" >> $GITHUB_OUTPUT
+                echo "IS_TAG=true" >> $GITHUB_OUTPUT
+              else
+                echo "Tag ${HEAD_BRANCH} does not exist"
+                echo "NEXUS_REPO_ID=maven-snapshots">> $GITHUB_OUTPUT
+                echo "RELEASE_ENFORCEMENT=" >> $GITHUB_OUTPUT
+                echo "IS_TAG=false" >> $GITHUB_OUTPUT
+              fi
+        env:
+          HEAD_BRANCH: ${{ env.BRANCH_NAME }}
+
+      - name: Check Tag & Current Module
+        id: is_current_module
+        if: steps.is_tag.outputs.IS_TAG == 'true'
+        run: |
+          EXTRACTED_MODULE=$(echo "$TAG" | awk -F'-v' '{print $1}')
+          CURRENT_MODULE=$(mvn help:evaluate -D'expression=project.artifactId' -q -D'forceStdout')
+          echo "TAG: $TAG"
+          echo "CURRENT_MODULE: $CURRENT_MODULE"
+          echo "EXTRACTED_MODULE: $EXTRACTED_MODULE"
+          if [ "$EXTRACTED_MODULE" == "$CURRENT_MODULE" ]; then
+            echo "TAG_MATCH_MODULE=true" >> $GITHUB_OUTPUT
+          else
+            echo "TAG_MATCH_MODULE=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          TAG: ${{ env.BRANCH_NAME }}
+        working-directory: ${{matrix.module == 'data-properties' && '.' || matrix.module}}
+
+      - name: Validate If Triggered By IKMDEV
+        id: triggered_by_ikm
+        run: |
+          echo "Repo Owner: ${REPOSITORY_OWNER}"
+          echo "Trigger User: ${TRIGGER_USER}"
+
+          if [ $REPOSITORY_OWNER == $TRIGGER_USER ]; then
+            echo "IKM_TRIGGER=true" >> $GITHUB_OUTPUT
+          else
+            echo "IKM_TRIGGER=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          REPOSITORY_OWNER: ${{github.repository_owner}}
+          TRIGGER_USER: ${{github.event.workflow_run.head_repository.owner.login}}
+
+      - name: Maven Settings File
+        uses: whelk-io/maven-settings-xml-action@v22
+        with:
+          servers: '[{"id": "${{ steps.is_tag.outputs.NEXUS_REPO_ID }}", "username": "admin", "password": "${{secrets.EC2_NEXUS_PASSWORD}}"}]'
+          profiles: '[{"id": "nexus-profile", "properties": {"altDeploymentRepository": "${{  steps.is_tag.outputs.NEXUS_REPO_ID  }}::https://nexus.tinkarbuild.com/repository/${{ steps.is_tag.outputs.NEXUS_REPO_ID  }}"}}]'
+          active_profiles: '["nexus-profile"]' 
+          output_file: .m2/settings.xml
+
+      - name: Maven Build
+        if: steps.is_tag.outputs.IS_TAG == 'false' || steps.is_current_module.outputs.TAG_MATCH_MODULE == 'true'
+        run: |
+          mvn clean install\
+            --batch-mode \
+            -U \
+            -e \
+            -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
+            -Dmaven.build.cache.enabled=false \
+            -PcodeQuality \
+            -PgenerateData \
+            ${{  steps.is_tag.outputs.RELEASE_ENFORCEMENT  }}
+        working-directory: ${{matrix.module == 'data-properties' && '.' || matrix.module}}
+
+      - name: Deploy To Nexus
+        if: steps.is_tag.outputs.IS_TAG == 'false' || steps.is_current_module.outputs.TAG_MATCH_MODULE == 'true'
+        run: |
+          mvn deploy \
+              --batch-mode \
+              -U \
+              -e \
+              -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
+              -DskipTests \
+              -DskipITs \
+              -s '/home/runner/work/${{github.event.repository.name}}/${{github.event.repository.name}}/.m2/settings.xml'\
+              -DrepositoryId='${{ steps.is_tag.outputs.NEXUS_REPO_ID  }}'
+        working-directory: ${{matrix.module == 'data-properties' && '.' || matrix.module}}
+    
+
+      - name: Publish To OSSRH (Maven Central Staging)
+        if: steps.is_tag.outputs.IS_TAG == 'true' && steps.is_current_module.outputs.TAG_MATCH_MODULE == 'true'
+        run: |
+         mvn deploy \
+            --batch-mode \
+            -e \
+            -U \
+            -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
+            -DskipTests \
+            -DskipITs \
+            -Dmaven.main.skip \
+            -Dmaven.test.skip \
+            -DrepositoryId=ossrh \
+            -DrepositoryIdOSSRH='true' \
+            -PstageOSSRH \
+            -Dmaven.build.cache.enabled=false
+        env:
+           MAVEN_USERNAME: ${{secrets.OSSRH_TOKEN_USER}}
+           MAVEN_CENTRAL_TOKEN: ${{secrets.OSSRH_TOKEN_PASS}}
+           MAVEN_GPG_PASSPHRASE: ${{secrets.GPG_PASSPHRASE}}
+        working-directory: ${{matrix.module == 'data-properties' && '.' || matrix.module}}
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        if: steps.is_tag.outputs.IS_TAG == 'true' && steps.is_current_module.outputs.TAG_MATCH_MODULE == 'true'
+        with:
+          token: ${{secrets.IKMDEVOPS_PAT_TOKEN}}
+          repository: ikmdev/tinkar-example-data
+
+      - name: Update Dropdown
+        if: steps.is_tag.outputs.IS_TAG == 'true' && steps.is_current_module.outputs.TAG_MATCH_MODULE == 'true'
+        run: |
+            git config user.name "ikmdevops"
+            git config user.email 'devops@ikm.dev'
+            git pull -p
+            echo "Adding $LATEST_TAG tag to the property version choice dropdown for users attempting to generate data"
+            yq -i ".on.workflow_dispatch.inputs.properties_version.options = [\"$LATEST_TAG\"] + .on.workflow_dispatch.inputs.properties_version.options" .github/workflows/generate_data.yaml
+            git diff -U1 | grep -E "\-\-\-|\- $LATEST_TAG" -B2 -A1 | grep -v "^--$" > add_property_version_choice.patch
+            git restore .
+            git apply add_property_version_choice.patch
+            git commit -am"Updated Generate Data Pipeline With $LATEST_TAG"
+            git push
+        env:
+          LATEST_TAG:  ${{env.BRANCH_NAME}}

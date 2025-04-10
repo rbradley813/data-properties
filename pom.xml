@@ -88,6 +88,38 @@
    
     
     <profiles>
+    <!--Release Enforcement Configuration-->
+        <profile>
+            <id>release-enforcement</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-enforcer-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>enforce-release-version</id>
+                                <goals>
+                                    <goal>enforce</goal>
+                                </goals>
+                                <configuration>
+                                    <rules>
+                                        <requireReleaseVersion>
+                                            <message>No Snapshots Allowed!</message>
+                                        </requireReleaseVersion>
+                                    </rules>
+                                    <fail>true</fail>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        
         <profile>
             <id>properties</id>
             <activation>
