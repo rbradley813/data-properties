@@ -60,6 +60,7 @@ jobs:
         env:
           HEAD_BRANCH: ${{ env.BRANCH_NAME }}
 
+      # Ensures that the current module matches the tag being built
       - name: Check Tag & Current Module
         id: is_current_module
         if: steps.is_tag.outputs.IS_TAG == 'true'
@@ -77,6 +78,28 @@ jobs:
         env:
           TAG: ${{ env.BRANCH_NAME }}
         working-directory: ${{matrix.module == 'data-properties' && '.' || matrix.module}}
+
+      # Extract the version number from tag name
+      - name: Extract Tag Version
+        id: extract_tag_version
+        if: steps.is_tag.outputs.IS_TAG == 'true'
+        run: |
+          VERSION=$(echo "$TAG" | awk -F'-v' '{print $2}')
+          echo "EXTRACTED_VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "EXTRACTED_VERSION: $VERSION"
+        env:
+          TAG: ${{ env.BRANCH_NAME }}
+      
+      # Map the module being built to the appropriate downstream repository
+      - name: Map Module To Appropriate Repo
+        id: module_repo_map
+        if: steps.is_tag.outputs.IS_TAG == 'true' && steps.is_current_module.outputs.TAG_MATCH_MODULE == 'true'
+        run: |
+            if [ "$MODULE" == "tinkar-example-data-properties" ]; then
+              echo "DISPATCH_REPO=tinkar-example-data" >> $GITHUB_OUTPUT
+            fi
+        env:
+          MODULE: ${{matrix.module}}
 
       - name: Validate If Triggered By IKMDEV
         id: triggered_by_ikm
@@ -112,7 +135,7 @@ jobs:
             -Dmaven.build.cache.enabled=false \
             -PcodeQuality \
             -PgenerateData \
-            ${{  steps.is_tag.outputs.RELEASE_ENFORCEMENT  }}
+            ${{  steps.is_tag.outputs.IS_TAG == 'true' && steps.is_current_module.outputs.TAG_MATCH_MODULE == 'true' && steps.is_tag.outputs.RELEASE_ENFORCEMENT || '' }}
         working-directory: ${{matrix.module == 'data-properties' && '.' || matrix.module}}
 
       - name: Deploy To Nexus
@@ -129,7 +152,6 @@ jobs:
               -DrepositoryId='${{ steps.is_tag.outputs.NEXUS_REPO_ID  }}'
         working-directory: ${{matrix.module == 'data-properties' && '.' || matrix.module}}
     
-
       - name: Publish To OSSRH (Maven Central Staging)
         if: steps.is_tag.outputs.IS_TAG == 'true' && steps.is_current_module.outputs.TAG_MATCH_MODULE == 'true'
         run: |
@@ -151,6 +173,19 @@ jobs:
            MAVEN_CENTRAL_TOKEN: ${{secrets.OSSRH_TOKEN_PASS}}
            MAVEN_GPG_PASSPHRASE: ${{secrets.GPG_PASSPHRASE}}
         working-directory: ${{matrix.module == 'data-properties' && '.' || matrix.module}}
+
+      # Performs repository dispatch event call on the appropriate downstream repository
+      - name: Repository Dispatch Call
+        if: steps.is_tag.outputs.IS_TAG == 'true' && steps.is_current_module.outputs.TAG_MATCH_MODULE == 'true'
+        run: |
+          echo "EXTRACT_VERSION_NUMBER Variable = ${{steps.extract_tag_version.outputs.EXTRACTED_VERSION}}"
+          curl -X POST \
+          -H "Accept: application/vnd.github.v3+json" \
+          -H "Authorization: token ${{secrets.IKMDEVOPS_PAT_TOKEN}}" \
+          https://api.github.com/repos/ikmdev/${{steps.module_repo_map.outputs.DISPATCH_REPO}}/dispatches \
+          -d '{"event_type":"build-repository-dispatch-trigger","client_payload":{"version": "${{steps.extract_tag_version.outputs.EXTRACTED_VERSION}}"}}'
+        env:
+          TAG: ${{env.BRANCH_NAME}}
 
       - name: Checkout Repository
         uses: actions/checkout@v4
