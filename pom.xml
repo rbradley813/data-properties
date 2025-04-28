@@ -77,7 +77,7 @@
                     <version>${gitflow-maven-plugin.version}</version>
                     <configuration>
                         <gitFlowConfig>
-                            <versionTagPrefix>${project.artifactId}</versionTagPrefix>
+                            <versionTagPrefix>${project.artifactId}-v</versionTagPrefix>
                         </gitFlowConfig>
                     </configuration>
                 </plugin>
