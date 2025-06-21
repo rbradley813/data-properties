@@ -15,7 +15,7 @@
     <packaging>pom</packaging>
 
     <properties>
-        <tinkar-starter-data.version>1.2.0</tinkar-starter-data.version>
+        <tinkar-starter-data.version>1.2.1</tinkar-starter-data.version>
     </properties>
 
     <name>Tinkar Example Data Properties</name>
