@@ -1,6 +1,6 @@
-name: Update Property Workflow
+name: Update Property Dispatch Listener Workflow
 
-run-name: 'Update Property Workflow -- ${{github.event.client_payload.artifactID}} ${{github.event.client_payload.version}}'
+run-name: 'Update Property Dispatch Listener -- ${{github.event.client_payload.artifactID}} ${{github.event.client_payload.version}}'
 
 # Pipeline/Workflow Triggers
 on:
