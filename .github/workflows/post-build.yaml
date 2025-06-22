@@ -165,7 +165,7 @@ jobs:
             -Dmaven.main.skip \
             -Dmaven.test.skip \
             -DrepositoryId=central \
-            -DrepositoryIdCentralRepository='true' \
+            -DrepositoryIdMavenCentralRepository='true' \
             -PstageMavenCentralRepository \
             -Dmaven.build.cache.enabled=false
         env:
