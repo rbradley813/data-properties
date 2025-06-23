@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>tinkar-starter-data-properties</artifactId>
+    <name>Tinkar Starter Data Properties</name>
     <version>1.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
