@@ -11,7 +11,7 @@
     </parent>
 
     <artifactId>tinkar-example-data-properties</artifactId>
-    <version>1.3.1-SNAPSHOT</version>
+    <version>1.7.0</version>
     <packaging>pom</packaging>
 
     <properties>
