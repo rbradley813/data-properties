@@ -79,6 +79,10 @@
                         <gitFlowConfig>
                             <versionTagPrefix>${project.artifactId}-v</versionTagPrefix>
                         </gitFlowConfig>
+                        <commitMessages>
+                            <releaseStartMessage>Update release version for ${project.artifactId}: @{version}</releaseStartMessage>
+                            <releaseFinishMessage>Set new development version for ${project.artifactId}</releaseFinishMessage>
+                        </commitMessages>
                     </configuration>
                 </plugin>
             </plugins>
