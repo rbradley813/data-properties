@@ -63,7 +63,5 @@ jobs:
           ossrh_token: ${{secrets.OSSRH_TOKEN_PASS}}
           gpg_key: ${{secrets.GPG_KEY}}
           gpg_passphrase: ${{secrets.GPG_PASSPHRASE}}
-          release_version: "\\${maven.build.timestamp}"
-          development_version: "\\${maven.build.timestamp}-SNAPSHOT"
-          version_property: "timestamp-suffix"
-          skip_update_version: "true"
+          release_version: "\\${timestamp-versioning-prefix}-${maven.build.timestamp}"
+          development_version: "\\${timestamp-versioning-prefix}-${maven.build.timestamp}-SNAPSHOT"
