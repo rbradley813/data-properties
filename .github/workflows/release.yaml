@@ -51,8 +51,6 @@ jobs:
         with:
           working_directory: ${{ env.MODULE }}
           github_token: ${{secrets.GITHUB_TOKEN}}
-          version_type: ${{ github.event.inputs.version_type }}
-          release_version: ${{ github.event.inputs.release_version }}
 
       - name: Shared Release Action (timestamp versioning)
         uses: ikmdev/maven-semver-release-action@v2.6.0
