@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>dev.ikm.maven.tinkar</groupId>
+        <artifactId>data-properties-parent</artifactId>
+        <version>1.2.0</version>
+    </parent>
+
+    <groupId>dev.ikm.maven.snomedct</groupId>
+    <artifactId>snomedct-data-properties</artifactId>
+    <version>${snomedct-release.date}-${snomedct-release.qualifier}-${timestamp-suffix}</version>
+    <packaging>pom</packaging>
+
+    <properties>
+        <tinkar-starter-data.version>20250813</tinkar-starter-data.version>
+        <snomedct-starter-data.version>20250813</snomedct-starter-data.version>
+
+        <snomedct-release.qualifier>international</snomedct-release.qualifier>
+        <snomedct-release.date>20250101T120000Z</snomedct-release.date>
+
+        <!-- Required Versioning Property -->
+        <timestamp-suffix>${maven.build.timestamp}-SNAPSHOT</timestamp-suffix>
+    </properties>
+
+    <name>Snomed Data Properties</name>
+    <description>Snomed Data Properties Project</description>
+    <url>https://www.ikm.dev</url>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+            <comments>A business-friendly OSS license</comments>
+        </license>
+    </licenses>
+
+    <developers>
+        <!-- OSSRH Related Developer (Start) -->
+        <developer>
+            <id>ikmdev</id>
+            <name>IKM Development Team</name>
+            <email>support@ikm.dev</email>
+        </developer>
+        <!-- OSSRH Related Developer (End) -->
+    </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com/ikmdev/data-properties.git</connection>
+        <developerConnection>scm:git:ssh://github.com:ikmdev/data-properties.git</developerConnection>
+        <url>http://www.github.com/ikmdev/data-properties</url>
+    </scm>
+
+    <build>
+        <plugins>
+            <!-- Skip Enforcer Rule -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>enforce-no-bad-sections</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <!-- Don't enforce SemVer for this project -->
+                            <rulesToSkip>requireProperty</rulesToSkip>
+                            <failIfNoRules>false</failIfNoRules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

@@ -23,7 +23,7 @@ jobs:
     if: github.event.workflow_run.conclusion == 'success' && github.repository_owner == 'ikmdev'
     strategy:
       matrix:
-        module: [data-properties, tinkar-example-data-properties, tinkar-starter-data-properties]
+        module: [data-properties, tinkar-example-data-properties, snomedct-data-properties]
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -97,6 +97,8 @@ jobs:
         run: |
             if [ "$MODULE" == "tinkar-example-data-properties" ]; then
               echo "DISPATCH_REPO=tinkar-example-data" >> $GITHUB_OUTPUT
+            elif [ "$MODULE" == "snomect-data-properties" ]; then
+              echo "DISPATCH_REPO=snomed-ct-data" >> $GITHUB_OUTPUT
             fi
         env:
           MODULE: ${{matrix.module}}

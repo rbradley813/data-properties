@@ -13,26 +13,14 @@ on:
        options:
         - --SELECT--
         - data-properties
-        - tinkar-starter-data-properties
         - tinkar-example-data-properties
-      release_version:
-        type: string
-        description: "(Optional) Custom Release Version"
-        required: false
-      version_type:
-        description: 'Development version type to increment'
-        required: true
-        default: 'minor'
-        type: choice
-        options:
-          - major
-          - minor
-          - patch
+        - snomedct-data-properties
 
 env:
   BRANCH_NAME: ${{ github.ref_name }}
   TRUNK_BRANCH_NAME: ${{ github.event.repository.default_branch }}
   MODULE: ${{inputs.modules == 'data-properties' && '.' || inputs.modules}}
+  TIMESTAMP_VERSION: ${{inputs.modules == 'snomedct-data-properties' && 'true' || 'false'}}
 
 jobs:
   release:
@@ -57,10 +45,27 @@ jobs:
         with:
           token: ${{secrets.IKMDEVOPS_PAT_TOKEN}}
   
-      - name: Shared Release Action
-        uses: ikmdev/maven-semver-release-action@v2.4.0
+      - name: Shared Release Action (semantic versioning)
+        uses: ikmdev/maven-semver-release-action@v2.6.0
+        if: ${{ env.TIMESTAMP_VERSION != 'true' }}
         with:
-            version_type: ${{ github.event.inputs.version_type }}
-            github_token: ${{secrets.GITHUB_TOKEN}}
-            release_version: ${{ github.event.inputs.release_version }}
-            working_directory: ${{ env.MODULE }}
+          working_directory: ${{ env.MODULE }}
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          version_type: ${{ github.event.inputs.version_type }}
+          release_version: ${{ github.event.inputs.release_version }}
+
+      - name: Shared Release Action (timestamp versioning)
+        uses: ikmdev/maven-semver-release-action@v2.6.0
+        if: ${{ env.TIMESTAMP_VERSION == 'true' }}
+        with:
+          working_directory: ${{ env.MODULE }}
+          ikmdevops_pat: ${{secrets.IKMDEVOPS_PAT_TOKEN}}
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          ossrh_username: ${{secrets.OSSRH_TOKEN_USER}}
+          ossrh_token: ${{secrets.OSSRH_TOKEN_PASS}}
+          gpg_key: ${{secrets.GPG_KEY}}
+          gpg_passphrase: ${{secrets.GPG_PASSPHRASE}}
+          release_version: "\\${maven.build.timestamp}"
+          development_version: "\\${maven.build.timestamp}-SNAPSHOT"
+          version_property: "timestamp-suffix"
+          skip_update_version: "true"
