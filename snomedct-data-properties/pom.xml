@@ -25,8 +25,8 @@
         <!-- Plugin Versions -->
         <flatten-maven-plugin.version>1.7.2</flatten-maven-plugin.version>
         <!-- Required Versioning Properties -->
-        <timestamp-versioning-prefix>${snomedct-release.date}-${snomedct-release.qualifier}</timestamp-versioning-prefix>
-        <revision>${timestamp-versioning-prefix}-${maven.build.timestamp}-SNAPSHOT</revision>
+        <timestamp-versioning-suffix>${maven.build.timestamp}-SNAPSHOT</timestamp-versioning-suffix>
+        <revision>${snomedct-release.date}-${snomedct-release.qualifier}-${timestamp-versioning-suffix}</revision>
     </properties>
 
     <name>Snomed Data Properties</name>
